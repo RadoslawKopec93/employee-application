@@ -1,7 +1,9 @@
-const { defineConfig } = require("@vue/cli-service");
-module.exports = defineConfig({
+console.log("👉 vue.config.js LOADED");
+
+module.exports = {
   transpileDependencies: true,
   devServer: {
+    allowedHosts: "all",
     port: 3001,
   },
-});
+};
