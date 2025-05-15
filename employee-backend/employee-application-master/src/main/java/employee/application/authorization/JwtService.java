@@ -21,14 +21,14 @@ public class JwtService {
         JWSSigner signer = new MACSigner(SECRET);
 
         JWTClaimsSet claimsSet = new JWTClaimsSet.Builder()
-            .subject(username)
-            .issuer("http://localhost:8080/")
-            .expirationTime(new Date(System.currentTimeMillis() + 3600_000)) // 1h
-            .build();
+                .subject(username)
+                .issuer("http://localhost:8080/")
+                .expirationTime(new Date(System.currentTimeMillis() + 3600_000)) // 1h
+                .build();
 
         SignedJWT signedJWT = new SignedJWT(
-            new JWSHeader(JWSAlgorithm.HS256),
-            claimsSet
+                new JWSHeader(JWSAlgorithm.HS256),
+                claimsSet
         );
 
         signedJWT.sign(signer);

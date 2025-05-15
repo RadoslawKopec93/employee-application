@@ -1,8 +1,13 @@
-employee\application\config\CorsConfig.class
 employee\application\services\AuthService.class
 employee\application\EmployeeApplication.class
+employee\application\model\User.class
+employee\application\repository\RoleRepository.class
 employee\application\authorization\JwtService.class
 employee\application\config\CorsConfig$1.class
-employee\application\authorization\JwtAuthenticationFilter.class
+employee\application\services\JwtService.class
+employee\application\model\Role.class
 employee\application\config\SecurityConfig.class
+employee\application\model\enums\RoleType.class
+employee\application\config\CorsConfig.class
+employee\application\authorization\JwtAuthenticationFilter.class
 employee\application\controller\HomeController.class

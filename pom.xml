@@ -7,10 +7,10 @@
     <groupId>com.example</groupId>
     <artifactId>employee-application</artifactId>
     <version>1.0.0</version>
-    <packaging>pom</packaging> <!-- to jest WAŻNE -->
+    <packaging>pom</packaging>
 
     <modules>
-        <module>employee-backend</module>
+        <module>employee-backend/employee-application-master</module>
     </modules>
 
     <name>Employee Application Parent</name>

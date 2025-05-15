@@ -12,27 +12,6 @@ import employee.application.authorization.JwtAuthenticationFilter;
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-
-  /*   @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http.authorizeHttpRequests( auth -> {
-            auth.requestMatchers("/t").permitAll();
-            auth.anyRequest().authenticated();
-        })
-        .oauth2Login(withDefaults())
-        .formLogin(withDefaults())
-        .build();
-    } */
-/*     @Bean
-SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    return http.authorizeHttpRequests(auth -> {
-        auth.requestMatchers("/t", "/t/").permitAll(); // <--- dostęp bez logowania
-        auth.anyRequest().authenticated();     // wszystko inne wymaga autoryzacji
-    })
-    .oauth2Login(withDefaults())              // logowanie przez OAuth2 (np. Keycloak)
-    .formLogin(withDefaults())                // logowanie formularzowe (fallback)
-    .build();
-} */
    private final JwtAuthenticationFilter jwtFilter;
 
     public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
