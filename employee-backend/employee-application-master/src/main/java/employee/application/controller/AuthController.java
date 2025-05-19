@@ -3,6 +3,7 @@ package employee.application.controller;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -70,7 +71,12 @@ public class AuthController {
     private final String clientSecret = "c761e1dea110ff826bc630d2eeb4873a05574e69";
 
     @PostMapping("/api/github-auth")
-    public String handleGithubAuth(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<String> handleGithubAuth(@RequestBody Map<String, String> payload) {
         return authService.authorizeUserAndCreateToken(payload);
     }
+
+    /*  @PostMapping("/login")
+    public ResponseEntity<String> handleFormLogin(@RequestBody User user) {
+        return authService.authorizeUserAndCreateToken(payload);
+    } */
 }

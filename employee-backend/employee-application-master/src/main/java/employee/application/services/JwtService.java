@@ -3,11 +3,14 @@ package employee.application.services;
 import java.security.Key;
 import java.util.Date;
 
+import org.springframework.stereotype.Service;
+
 import employee.application.model.enums.RoleType;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
 
+@Service
 public class JwtService {
 
     public String generateToken(String subject, RoleType roleType) {

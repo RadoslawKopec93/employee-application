@@ -4,16 +4,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import employee.application.authorization.JwtService;
 import employee.application.services.AuthService;
 
 @RestController
 public class HomeController {
 
     private final RestTemplate restTemplate = new RestTemplate();
-
-    @Autowired
-    private JwtService jwtService;
 
     @Autowired
     private AuthService authService;

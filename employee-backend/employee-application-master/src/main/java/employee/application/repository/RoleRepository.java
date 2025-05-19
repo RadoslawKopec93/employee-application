@@ -12,4 +12,8 @@ import employee.application.model.enums.RoleType;
 public interface RoleRepository extends JpaRepository<Role, Long> {
 
     Optional<Role> findByRoleType(RoleType role);
+
+    default Optional<Role> findMeSomething(RoleType roleType) {
+        return this.findByRoleType(roleType);
+    }
 }

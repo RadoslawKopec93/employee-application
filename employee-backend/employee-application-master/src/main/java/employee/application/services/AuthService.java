@@ -2,18 +2,25 @@ package employee.application.services;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import employee.application.model.Role;
 import employee.application.model.User;
+import employee.application.model.enums.RoleType;
+import employee.application.repository.RoleRepository;
 import employee.application.repository.UserRepository;
 
 @Service
@@ -21,6 +28,12 @@ public class AuthService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private JwtService jwtService;
 
     @Value("${spring.security.oauth2.client.registration.github.client-id}")
     private String clientId;
@@ -30,11 +43,14 @@ public class AuthService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    public String authorizeUserAndCreateToken(Map<String, String> payload) {
+    /*   public ResponseEntity<String> authorizeUserAndCreateToken(User user) {
+        JpaRepository userRepo = userRepository;
+    } */
+    public ResponseEntity<String> authorizeUserAndCreateToken(Map<String, String> payload) {
         String code = payload.get("code");
 
         if (code == null || code.isEmpty()) {
-            return "BRAK";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Provided code is not valid");
         }
 
         String tokenUrl = "https://github.com/login/oauth/access_token";
@@ -53,60 +69,103 @@ public class AuthService {
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(tokenUrl, request, Map.class);
-            if (response.getStatusCode().is2xxSuccessful()) {
+            if (response.getStatusCode() == HttpStatusCode.valueOf(200)) {
                 String providerId = getUserInformationId(response);
-                createOauthUserIfnew(providerId);
-                System.out.println("RESPONSE");
-                System.out.println(response);
-                System.out.println("TEST");
-                return "JEST";
+
+                createOauthUserIfnew(
+                        id -> userRepository.findByProviderId(id),
+                        providerId, "GITHUB", null, null);
+                // createOauthUserIfnew(providerId);
+                String token = jwtService.generateToken(providerId, RoleType.EMPLOYEE);
+                return ResponseEntity.status(HttpStatus.OK).body(token);
             } else {
                 System.out.println("TEST2");
 
-                return "BRAK2";
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Github validation failed");
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            return "errer";
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Validation failed");
         }
     }
 
     public String getUserInformationId(ResponseEntity<Map> response) {
-        String accessToken = (String) response.getBody().get("access_token");
+        if (response.getBody() != null) {
+            if (response.getBody().get("access_token") != null) {
+                String accessToken = (String) response.getBody().get("access_token");
 
-        HttpHeaders userHeaders = new HttpHeaders();
-        userHeaders.setBearerAuth(accessToken);
-        userHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+                HttpHeaders userHeaders = new HttpHeaders();
+                userHeaders.setBearerAuth(accessToken);
+                userHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
 
-        HttpEntity<Void> userRequest = new HttpEntity<>(userHeaders);
+                HttpEntity<Void> userRequest = new HttpEntity<>(userHeaders);
 
-        ResponseEntity<Map> userResponse = restTemplate.exchange(
-                "https://api.github.com/user",
-                HttpMethod.GET,
-                userRequest,
-                Map.class
-        );
+                ResponseEntity<Map> userResponse = restTemplate.exchange(
+                        "https://api.github.com/user",
+                        HttpMethod.GET,
+                        userRequest,
+                        Map.class
+                );
 
-        Map userInfo = userResponse.getBody();
-        System.out.println("USER INFO:");
-        System.out.println(userInfo);
-        Object idObj = userInfo.get("id");
-        if (idObj instanceof Number) {
-            long id = ((Number) idObj).longValue();
-            System.out.println("ID: " + id);
-            return String.valueOf(id);
-        } else {
+                Map userInfo = userResponse.getBody();
+                if (userInfo == null) {
+                    System.err.println("Auth service getUserInformationId userInfo is null");
+                    return null;
+                }
+                if (userInfo.get("id") == null) {
+                    System.err.println("Auth service getUserInformationId userInfo.get(key) is null");
+                    return null;
+                }
+
+                Object idObj = userInfo.get("id");
+                if (idObj instanceof Number number) {
+                    long id = number.longValue();
+                    return String.valueOf(id);
+                } else {
+                    System.err.println("Auth service getUserInformationId idObj is null");
+                    return null;
+                }
+            }
+            System.err.println("Auth service getUserInformationId response.getBody().get(\"access_token\") is null");
             return null;
         }
+        System.err.println("Auth service getUserInformationId response.getBody() is null");
+        return null;
     }
 
-    public void createOauthUserIfnew(String providerId) {
-        Boolean userExist = userRepository.findByProviderId(providerId).isPresent();
-        if (!userExist) {
-            User user = new User();
-            user.setProviderId(providerId);
-            user.setProvider("GITHUB");
-            userRepository.save(user);
+    public void createOauthUserIfnew(Function<String, Optional<User>> lookupFunction,
+            String providerId,
+            String provider,
+            String email,
+            String password) {
+        try {
+            Boolean userExist = lookupFunction.apply(providerId).isPresent();
+            System.out.println("DUPSKO " + userExist);
+            if (!userExist) {
+                Role role = roleRepository.findByRoleType(RoleType.EMPLOYEE).get();
+                System.out.println("NIE MA");
+                User user = new User();
+                user.setProviderId(providerId);
+                user.setProvider(provider);
+                user.setEmail(email);
+                user.setPassword(password);
+                user.setRoles(List.of(role));
+                userRepository.save(user);
+            }
+        } catch (Exception e) {
+            System.err.println("Error while creating a new user:" + e.getMessage());
         }
     }
+    /*   public void createOauthUserIfnew(String providerId) {
+        try {
+            Boolean userExist = userRepository.findByProviderId(providerId).isPresent();
+            if (!userExist) {
+                User user = new User();
+                user.setProviderId(providerId);
+                user.setProvider("GITHUB");
+                userRepository.save(user);
+            }
+        } catch (Exception e) {
+            System.err.println("Error while creating a new user:" + e.getMessage());
+        }
+    } */
 }
