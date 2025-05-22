@@ -3,6 +3,7 @@ package employee.application.services;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,11 +15,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import employee.application.model.Role;
 import employee.application.model.User;
+import employee.application.model.UserLoginDTO;
 import employee.application.model.enums.RoleType;
 import employee.application.repository.RoleRepository;
 import employee.application.repository.UserRepository;
@@ -33,6 +37,9 @@ public class AuthService {
     private RoleRepository roleRepository;
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
     private JwtService jwtService;
 
     @Value("${spring.security.oauth2.client.registration.github.client-id}")
@@ -43,11 +50,13 @@ public class AuthService {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    private static final String PAYLOAD_CODE = "code";
+
     /*   public ResponseEntity<String> authorizeUserAndCreateToken(User user) {
         JpaRepository userRepo = userRepository;
     } */
     public ResponseEntity<String> authorizeUserAndCreateToken(Map<String, String> payload) {
-        String code = payload.get("code");
+        String code = payload.get(PAYLOAD_CODE);
 
         if (code == null || code.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Provided code is not valid");
@@ -62,7 +71,7 @@ public class AuthService {
         Map<String, String> body = Map.of(
                 "client_id", clientId,
                 "client_secret", clientSecret,
-                "code", code
+                PAYLOAD_CODE, code
         );
 
         HttpEntity<Map<String, String>> request = new HttpEntity<>(body, headers);
@@ -72,12 +81,16 @@ public class AuthService {
             if (response.getStatusCode() == HttpStatusCode.valueOf(200)) {
                 String providerId = getUserInformationId(response);
 
-                createOauthUserIfnew(
+                Boolean authenticationProcessPassed = createOauthUserIfnew(
                         id -> userRepository.findByProviderId(id),
                         providerId, "GITHUB", null, null);
                 // createOauthUserIfnew(providerId);
-                String token = jwtService.generateToken(providerId, RoleType.EMPLOYEE);
-                return ResponseEntity.status(HttpStatus.OK).body(token);
+                if (authenticationProcessPassed) {
+                    String token = jwtService.generateToken(providerId, Set.of(RoleType.EMPLOYEE));
+                    return ResponseEntity.status(HttpStatus.OK).body(token);
+                }
+
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Cannot find or create user");
             } else {
                 System.out.println("TEST2");
 
@@ -132,40 +145,65 @@ public class AuthService {
         return null;
     }
 
-    public void createOauthUserIfnew(Function<String, Optional<User>> lookupFunction,
+    public boolean createOauthUserIfnew(Function<String, Optional<User>> lookupFunction,
             String providerId,
             String provider,
             String email,
             String password) {
         try {
-            Boolean userExist = lookupFunction.apply(providerId).isPresent();
-            System.out.println("DUPSKO " + userExist);
-            if (!userExist) {
+            Optional<User> userExist = lookupFunction.apply(providerId);
+            if (!userExist.isPresent()) {
                 Role role = roleRepository.findByRoleType(RoleType.EMPLOYEE).get();
-                System.out.println("NIE MA");
                 User user = new User();
                 user.setProviderId(providerId);
                 user.setProvider(provider);
                 user.setEmail(email);
-                user.setPassword(password);
-                user.setRoles(List.of(role));
+                user.setPassword(hashPassword(password));
+                user.setRoles(Set.of(role));
                 userRepository.save(user);
             }
+            return true;
         } catch (Exception e) {
             System.err.println("Error while creating a new user:" + e.getMessage());
+            return false;
         }
     }
-    /*   public void createOauthUserIfnew(String providerId) {
-        try {
-            Boolean userExist = userRepository.findByProviderId(providerId).isPresent();
-            if (!userExist) {
-                User user = new User();
-                user.setProviderId(providerId);
-                user.setProvider("GITHUB");
-                userRepository.save(user);
+
+    public ResponseEntity<String> loginFormUser(UserLoginDTO userLoginDTO) {
+        if (userLoginDTO.email() != null && userLoginDTO.password() != null) {
+            User user = userRepository
+                    .findByEmail(userLoginDTO.email())
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            Boolean passwordMatch = authPassword(userLoginDTO.password(), user.getPassword());
+            if (passwordMatch) {
+                return ResponseEntity.status(HttpStatus.OK).body(jwtService.generateToken(userLoginDTO.email(), user.getRolesTypes()));
             }
-        } catch (Exception e) {
-            System.err.println("Error while creating a new user:" + e.getMessage());
+        }
+    }
+
+    /* 
+    public ResponseEntity<String> loginFormUser(UserLoginDTO userLoginDTO) {
+        if (userLoginDTO.email() != null && userLoginDTO.password() != null) {
+            Boolean authProcessPassed = createOauthUserIfnew(
+                    email -> userRepository.findByEmail(email),
+                    null,
+                    null,
+                    userLoginDTO.email(),
+                    userLoginDTO.password()
+            );
+
+            if (authProcessPassed) {
+
+            }
         }
     } */
+
+    public String hashPassword(String password) {
+        return passwordEncoder.encode(password);
+    }
+
+    public boolean authPassword(String password, String hashedPassword) {
+        return passwordEncoder.matches(password, hashedPassword);
+    }
 }

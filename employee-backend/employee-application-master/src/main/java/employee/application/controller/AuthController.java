@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import employee.application.model.User;
+import employee.application.model.UserLoginDTO;
 import employee.application.services.AuthService;
 
 @RestController
@@ -75,8 +77,8 @@ public class AuthController {
         return authService.authorizeUserAndCreateToken(payload);
     }
 
-    /*  @PostMapping("/login")
-    public ResponseEntity<String> handleFormLogin(@RequestBody User user) {
+    @PostMapping("/login")
+    public ResponseEntity<String> handleFormLogin(@RequestBody UserLoginDTO user) {
         return authService.authorizeUserAndCreateToken(payload);
-    } */
+    }
 }

@@ -1,7 +1,11 @@
 package employee.application.model;
 
-import java.util.List;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Objects;
+import java.util.Set;
 
+import employee.application.model.enums.RoleType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -45,5 +49,42 @@ public class User {
                     name = "user_id", referencedColumnName = "id"),
             inverseJoinColumns = @JoinColumn(
                     name = "role_id", referencedColumnName = "id"))
-    private List<Role> roles;
+    private Set<Role> roles;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof User)) {
+            return false;
+        }
+        User user = (User) o;
+        if ((providerId == null ? user.providerId == null : providerId.equals(user.providerId))
+                && (provider == null ? user.provider == null : provider.equals(user.provider))
+                && (email == null ? user.email == null : email.equals(user.email))
+                && (password == null ? user.password == null : password.equals(user.password))) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    @Override
+    public int hashCode() {
+        if (providerId != null) {
+            return Objects.hash(providerId, provider);
+        }
+
+        return Objects.hash(email, password);
+    }
+
+    public Set<RoleType> getRolesTypes() {
+        Iterator<Role> iterator = this.roles.iterator();
+        Set<RoleType> set = new HashSet<>();
+        while (iterator.hasNext()) {
+            set.add(iterator.next().getRoleType());
+        }
+        return set;
+    }
 }

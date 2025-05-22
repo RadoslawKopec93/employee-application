@@ -1,5 +1,7 @@
 package employee.application.model;
 
+import java.util.Objects;
+
 import employee.application.model.enums.RoleType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -27,5 +29,25 @@ public class Role {
     }
 
     public Role() {
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof Role)) {
+            return false;
+        }
+        Role role = (Role) o;
+        if (roleType.equals(role.roleType)) {
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(roleType);
     }
 }
