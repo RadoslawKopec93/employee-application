@@ -20,10 +20,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import employee.application.model.RequestMessage;
 import employee.application.model.Role;
 import employee.application.model.User;
 import employee.application.model.UserLoginDTO;
+import employee.application.model.UserToken;
 import employee.application.model.enums.RoleType;
+import employee.application.model.interfaces.ApiResponse;
 import employee.application.repository.RoleRepository;
 import employee.application.repository.UserRepository;
 
@@ -55,11 +58,11 @@ public class AuthService {
     /*   public ResponseEntity<String> authorizeUserAndCreateToken(User user) {
         JpaRepository userRepo = userRepository;
     } */
-    public ResponseEntity<String> authorizeUserAndCreateToken(Map<String, String> payload) {
+    public ResponseEntity<ApiResponse> authorizeUserAndCreateToken(Map<String, String> payload) {
         String code = payload.get(PAYLOAD_CODE);
 
         if (code == null || code.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Provided code is not valid");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RequestMessage("Provided code is not valid"));
         }
 
         String tokenUrl = "https://github.com/login/oauth/access_token";
@@ -87,17 +90,17 @@ public class AuthService {
                 // createOauthUserIfnew(providerId);
                 if (authenticationProcessPassed) {
                     String token = jwtService.generateToken(providerId, Set.of(RoleType.EMPLOYEE));
-                    return ResponseEntity.status(HttpStatus.OK).body(token);
+                    return ResponseEntity.status(HttpStatus.OK).body(new UserToken(token));
                 }
 
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Cannot find or create user");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RequestMessage("Cannot find or create user"));
             } else {
                 System.out.println("TEST2");
 
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Github validation failed");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RequestMessage("Github validation failed"));
             }
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Validation failed");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RequestMessage("Validation failed"));
         }
     }
 
@@ -169,7 +172,7 @@ public class AuthService {
         }
     }
 
-    public ResponseEntity<String> loginFormUser(UserLoginDTO userLoginDTO) {
+    public ResponseEntity<ApiResponse> loginFormUser(UserLoginDTO userLoginDTO) {
         if (userLoginDTO.email() != null && userLoginDTO.password() != null) {
             User user = userRepository
                     .findByEmail(userLoginDTO.email())
@@ -177,9 +180,11 @@ public class AuthService {
 
             Boolean passwordMatch = authPassword(userLoginDTO.password(), user.getPassword());
             if (passwordMatch) {
-                return ResponseEntity.status(HttpStatus.OK).body(jwtService.generateToken(userLoginDTO.email(), user.getRolesTypes()));
+                return ResponseEntity.status(HttpStatus.OK).body(new UserToken(jwtService.generateToken(userLoginDTO.email(), user.getRolesTypes())));
             }
         }
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new RequestMessage("Cannot authorize user"));
     }
 
     /* 
@@ -198,7 +203,6 @@ public class AuthService {
             }
         }
     } */
-
     public String hashPassword(String password) {
         return passwordEncoder.encode(password);
     }
