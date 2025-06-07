@@ -1,25 +1,20 @@
 package employee.application.controller;
 
-import java.util.Map;
-
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.User;
-import org.springframework.security.oauth2.core.user.OAuth2User;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.client.RestTemplate;
 
-import employee.application.authorization.JwtService;
+import employee.application.services.AuthService;
 
 @RestController
 public class HomeController {
-    
-    @Autowired
-    private JwtService jwtService;
 
-    @GetMapping("/t")
+    private final RestTemplate restTemplate = new RestTemplate();
+
+    @Autowired
+    private AuthService authService;
+
+    /*   @GetMapping("/t")
     @ResponseBody
     public String home() {
         System.out.println(">> /t was accessed");
@@ -63,4 +58,12 @@ public class HomeController {
         String jwt = jwtService.generateToken(username);
         return Map.of("token", jwt);
     }
+
+    private final String clientId = "Ov23li74ydf1wrP9LsLX";
+    private final String clientSecret = "c761e1dea110ff826bc630d2eeb4873a05574e69";
+
+    @PostMapping("/api/github-auth")
+    public String handleGithubAuth(@RequestBody Map<String, String> payload) {
+        return authService.authorizeUserAndCreateToken(payload);
+    } */
 }
