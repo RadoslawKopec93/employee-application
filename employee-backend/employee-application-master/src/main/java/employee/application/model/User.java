@@ -36,7 +36,6 @@ public class User {
     @Column(nullable = true)
     private String provider;
 
-    @Column(nullable = true)
     private String email;
 
     @Column(nullable = true)

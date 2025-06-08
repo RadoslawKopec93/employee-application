@@ -4,6 +4,8 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -12,8 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import employee.application.model.User;
-import employee.application.model.UserLoginDTO;
+import employee.application.model.interfaces.ApiResponse;
 import employee.application.services.AuthService;
 
 @RestController
@@ -22,63 +23,42 @@ public class AuthController {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
-    @Autowired
+    private SecureService secureService;
+
     private AuthService authService;
 
-    @GetMapping("/tasdas")
-    @ResponseBody
-    public String home() {
-        System.out.println(">> /t was accessed");
-        return "Hello";
+    public AuthController(AuthService authService, SecureService secureService) {
+        this.authService = authService;
+        this.secureService = secureService;
     }
 
-    /*     @GetMapping("/secured")
-    public Map<String, String> secured(@AuthenticationPrincipal Object principal) throws Exception {
-        String username;
-
-        if (principal instanceof OAuth2User oAuth2User) {
-            username = oAuth2User.getAttribute("login"); // GitHub login
-        } else if (principal instanceof User user) {
-            username = user.getUsername(); // formLogin
-        } else {
-            username = principal.toString();
-        }
-
-        String jwt = jwtService.generateToken(username);
-        return Map.of(
-            "message", "Authenticated as " + username,
-            "token", jwt
-        );
-    } */
-
- /*     @GetMapping("/api/login-success")
-    public ResponseEntity<Map<String, String>> loginSuccess(@AuthenticationPrincipal OAuth2User principal) throws Exception {
-        String username = principal.getAttribute("login"); // np. GitHub login
-        System.out.println("USERNAME111 " + username);
-        String jwt = jwtService.generateToken(username);
-
-        return ResponseEntity.ok(Map.of(
-            "message", "Authenticated as " + username,
-            "token", jwt
-        ));
-    }
-
-    @GetMapping("/token")
-    public Map<String, String> token(@AuthenticationPrincipal OAuth2User user) throws Exception {
-        String username = user.getAttribute("login"); // dla GitHuba to będzie nazwa użytkownika
-        String jwt = jwtService.generateToken(username);
-        return Map.of("token", jwt);
-    } */
     private final String clientId = "Ov23li74ydf1wrP9LsLX";
     private final String clientSecret = "c761e1dea110ff826bc630d2eeb4873a05574e69";
 
     @PostMapping("/api/github-auth")
-    public ResponseEntity<String> handleGithubAuth(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<ApiResponse> handleGithubAuth(@RequestBody Map<String, String> payload) {
+        System.out.println("TEST1");
         return authService.authorizeUserAndCreateToken(payload);
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<String> handleFormLogin(@RequestBody UserLoginDTO user) {
-        return authService.authorizeUserAndCreateToken(payload);
+    @PostMapping("/refresh-token")
+    public String refreshToken(@RequestBody String entity) {
+        //TODO: process POST request
+
+        return entity;
+    }
+
+   // @PreAuthorize("hasRole('ROLE_EMPLOYEE')")
+    @GetMapping("/test")
+    public String testRefresh() {
+        System.out.println("AUTH: " + SecurityContextHolder.getContext().getAuthentication());
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        System.out.println("AUTH: " + auth);
+        System.out.println("AUTHORITIES: " + auth.getAuthorities());
+        System.out.println("SECURE SERVICE CLASS: " + secureService.getClass());
+
+        return secureService.testLogic();
+
+        //return "UDAŁO SIE";
     }
 }

@@ -13,33 +13,21 @@ onMounted(async () => {
   if (code) {
     const res = await fetch('http://localhost:8080/api/github-auth', {
       method: 'POST',
+      credentials: 'include',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     }) 
     console.log("DUPSKO")
     //console.log(res.text())
-    const a = await res.text();
-    console.log("odpowiedz ", a)
-/*     fetch('http://localhost:8080/api/github-auth')  // adres endpointu
-  .then(response => {
-    if (!response.ok) {
-      throw new Error('Network response was not ok: ' + response.statusText);
+    const token = await res.text();
+    console.log(token)
+    const a = JSON.parse(token);
+    console.log("odpowiedz ")
+    localStorage.setItem("access_token", a.token)
+    if (a.token) {
+      window.history.replaceState(null, '', '/feed')
+      router.push('/feed')
     }
-    return response.json();  // zakładamy, że odpowiedź to JSON
-  })
-  .then(data => {
-    console.log('Odpowiedź z API:', data);
-  })
-  .catch(error => {
-    console.error('Błąd podczas fetch:', error);
-  }); */
-
-   // const data = await res.json()
-   // localStorage.setItem('token', data.token)
-
-    // Czyść URL z ?code=...
-    window.history.replaceState(null, '', '/feed')
-    router.push('/feed')
   }
 })
 </script>

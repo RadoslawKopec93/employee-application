@@ -10,9 +10,9 @@ export const useAuthStore = defineStore("authStore", () => {
       const clientId = "Ov23li74ydf1wrP9LsLX"; // z GitHuba
 const redirectUri = "http://localhost:3001/oauth-callback";
 
-const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user`;
-//alert(githubAuthUrl)
-console.log(githubAuthUrl);
+//const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user user:email`;
+const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=user:email`;
+
 window.location.href = githubAuthUrl;
 
 
